@@ -1,0 +1,179 @@
+#include "tetromino.h"
+#include "tetris.h"
+#include "term.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <errno.h>
+
+char *BOX_CHARS[BOX_CHARS_SIZE] = {
+	"\xE2\x94\xBC\xE2\x94\x80", /* 0b0000 -> "┼─" */
+	"\xE2\x94\x9C\xE2\x94\x80", /* 0b0001 -> "├─" */
+	"\xE2\x94\xB4\xE2\x94\x80", /* 0b0010 -> "┴─" */
+	"\xE2\x94\x94\xE2\x94\x80", /* 0b0011 -> "└─" */
+	"\xE2\x94\xA4 ",            /* 0b0100 -> "┤ " */
+	"\xE2\x94\x82 ",            /* 0b0101 -> "│ " */
+	"\xE2\x94\x98 ",            /* 0b0110 -> "┘ " */
+	"",                         /* 0b0111 -> ""   */
+	"\xE2\x94\xAC\xE2\x94\x80", /* 0b1000 -> "┬─" */
+	"\xE2\x94\x8C\xE2\x94\x80", /* 0b1001 -> "┌─" */
+	"\xE2\x94\x80\xE2\x94\x80", /* 0b1010 -> "──" */
+	"",                         /* 0b1011 -> ""   */
+	"\xE2\x94\x90 ",            /* 0b1100 -> "┐ " */
+	"",                         /* 0b1101 -> ""   */
+	"",                         /* 0b1110 -> ""   */
+	"  "                        /* 0b1111 -> "  " */
+};
+
+int *get_cell_neighbours(int idx, int width, int *cells);
+char *cell_to_box_char(int idx, int width, int *cells);
+
+void initialize_tetris(Tetris *tetris, int width, int height)
+{
+	int i, cells_size = width * height;
+
+	tetris->width = width;
+	tetris->height = height;
+	tetris->active_tetromino = NULL;
+	if ((tetris->cells = malloc((cells_size)*sizeof(int))) == NULL)
+	{
+		perror("Failed to initialize tetris");
+		exit(errno);
+	}
+
+	/* Set all cells to 0 */
+	memset(tetris->cells, 0, (cells_size)*sizeof(int));
+
+	/* Add horizontal borders */
+	for (i = 0; i < width; ++i)
+	{
+		tetris->cells[i] = 1;
+		tetris->cells[cells_size - i] = 1;
+	}
+
+	/* Add vertical borders */
+	for (i = width; i < cells_size; i += width)
+	{
+		tetris->cells[i-1] = 1;
+		tetris->cells[i] = 1;
+	}
+}
+
+void terminate_tetris(Tetris *tetris)
+{
+	free(tetris->cells);
+	free(tetris->active_tetromino);
+}
+
+char *tetris_to_str(Tetris *tetris)
+{
+	char *str;
+	char *bchars;
+	int i, j = 0, k, wrows, wcols, vmsize, hmsize;
+
+	get_window_size(&wcols, &wrows);
+	vmsize = (wrows - tetris->height) / 2;
+	hmsize = (wcols - 2*tetris->width) / 2;
+	if ((str = malloc(((tetris->width + vmsize)*(tetris->height + hmsize) + 2)*3*2*sizeof(char))) == NULL)
+	{
+		perror("Failed to generate string representation of tetris");
+		exit(errno);
+	}
+
+	/* Center vertically */
+	for (i = 0; i < vmsize; ++i)
+	{
+		memcpy(str + j, "\n\r", 2);
+		j += 2;
+	}
+
+	for (i = tetris->width; i < tetris->width * tetris->height; ++i)
+	{
+		/* Center horizontally */
+		if (i % tetris->width == 0)
+		{
+			for (k = 0; k < hmsize; ++k)
+			{
+				str[j++] = ' ';
+			}
+			continue;
+		}
+
+		/* Generate board */
+		bchars = cell_to_box_char(i, tetris->width, tetris->cells);
+		memcpy(str + j, bchars, strlen(bchars));
+		j += strlen(bchars);
+		if (i > 0 && (i + 1) % tetris->width == 0)
+		{
+			memcpy(str + j, "\n\r", 2);
+			j += 2;
+		}
+	}
+
+	str[j] = '\0';
+	return str;
+}
+
+int add_new_tetromino(Tetris *tetris)
+{
+	free(tetris->active_tetromino);
+	if ((tetris->active_tetromino = malloc(sizeof(Tetromino))) == NULL)
+	{
+		perror("Failed to add new tetromino");
+		exit(errno);
+	}
+	initialize_tetromino(tetris->active_tetromino, tetris->width);
+	return insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+}
+
+int move_active_tetromino_left(Tetris *tetris)
+{
+	return move_tetromino(tetris->active_tetromino,
+			-1,
+			tetris->width,
+			tetris->cells);
+}
+
+int move_active_tetromino_right(Tetris *tetris)
+{
+	return move_tetromino(tetris->active_tetromino,
+			1,
+			tetris->width,
+			tetris->cells);
+}
+
+int move_active_tetromino_down(Tetris *tetris)
+{
+	return move_tetromino(tetris->active_tetromino,
+			tetris->width,
+			tetris->width,
+			tetris->cells);
+}
+
+int *get_cell_neighbours(int idx, int width, int *cells)
+{
+	int *n = malloc(4*sizeof(int));
+	if (n == NULL)
+	{
+		perror("Failed to get cell's neighbours");
+		exit(errno);
+	}
+	n[0] = (idx - width - 1 < 0) ? 0 : cells[idx - width - 1];
+	n[1] = (idx - width < 0) ? 0 : cells[idx - width];
+	n[2] = (idx - 1 < 0) ? 0 : cells[idx - 1];
+	n[3] = cells[idx];
+	return n;
+}
+
+char *cell_to_box_char(int idx, int width, int *cells)
+{
+	int bchar_idx = 0;
+	int *n = get_cell_neighbours(idx, width, cells);
+	if (n[0] == n[2]) bchar_idx += 1;
+	if (n[2] == n[3]) bchar_idx += 2;
+	if (n[3] == n[1]) bchar_idx += 4;
+	if (n[1] == n[0]) bchar_idx += 8;
+	free(n);
+	return BOX_CHARS[bchar_idx];
+}
