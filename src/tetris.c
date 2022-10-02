@@ -192,7 +192,7 @@ int remove_full_rows(Tetris *tetris)
 	return first_removed;
 }
 
-void remove_empty_lines(Tetris *tetris, int start)
+void remove_empty_rows(Tetris *tetris, int start)
 {
 	int row, tmp_row, col, is_empty;
 	for (row = tetris->height - 2; row >= start; --row)

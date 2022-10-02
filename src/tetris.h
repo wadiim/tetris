@@ -31,6 +31,6 @@ int rotate_active_tetromino_anticlockwise(Tetris *tetris);
  */
 int remove_full_rows(Tetris *tetris);
 
-void remove_empty_lines(Tetris *tetris, int start);
+void remove_empty_rows(Tetris *tetris, int start);
 
 #endif
