@@ -49,7 +49,7 @@ void initialize_tetris(Tetris *tetris, int width, int height)
 	for (i = 0; i < width; ++i)
 	{
 		tetris->cells[i] = 1;
-		tetris->cells[cells_size - i] = 1;
+		tetris->cells[cells_size - i - 1] = 1;
 	}
 
 	/* Add vertical borders */
