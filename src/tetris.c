@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-char *BOX_CHARS[BOX_CHARS_SIZE] = {
+static char *BOX_CHARS[BOX_CHARS_SIZE] = {
 	"\xE2\x94\xBC\xE2\x94\x80", /* 0b0000 -> "┼─" */
 	"\xE2\x94\x9C\xE2\x94\x80", /* 0b0001 -> "├─" */
 	"\xE2\x94\xB4\xE2\x94\x80", /* 0b0010 -> "┴─" */
@@ -26,8 +26,8 @@ char *BOX_CHARS[BOX_CHARS_SIZE] = {
 	"  "                        /* 0b1111 -> "  " */
 };
 
-int *get_cell_neighbours(int idx, int width, int *cells);
-char *cell_to_box_char(int idx, int width, int *cells);
+static int *get_cell_neighbours(int idx, int width, int *cells);
+static char *cell_to_box_char(int idx, int width, int *cells);
 
 void initialize_tetris(Tetris *tetris, int width, int height)
 {

@@ -7,9 +7,10 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 
-struct termios orig_termios;
+static struct termios orig_termios;
 
 static int get_char(void *c);
+static void get_cursor_position(int *x, int *y);
 
 void switch_to_alternate_buffer(void)
 {
@@ -44,44 +45,6 @@ void show_cursor(void)
 	{
 		perror("Failed to show cursor");
 		exit(errno);
-	}
-}
-
-void get_cursor_position(int *x, int *y)
-{
-	unsigned i = 0;
-	char buf[32];
-
-	if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
-	{
-		perror("Failed to get cursor position");
-		exit(errno);
-	}
-
-	while (i < sizeof(buf) - 1)
-	{
-		if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
-		if (buf[i] == 'R') break;
-		++i;
-	}
-	buf[i] = '\0';
-	if (x != NULL)
-	{
-		if (sscanf(&buf[4], "%i", x) != 1)
-		{
-			perror("Failed to get cursor position");
-			exit(errno);
-		}
-		--(*x);
-	}
-	if (y != NULL)
-	{
-		if (sscanf(&buf[2], "%i", y) != 1)
-		{
-			perror("Failed to get cursor position");
-			exit(errno);
-		}
-		--(*y);
 	}
 }
 
@@ -194,4 +157,42 @@ int get_char(void *c)
 		exit(errno);
 	}
 	return nread;
+}
+
+void get_cursor_position(int *x, int *y)
+{
+	unsigned i = 0;
+	char buf[32];
+
+	if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+	{
+		perror("Failed to get cursor position");
+		exit(errno);
+	}
+
+	while (i < sizeof(buf) - 1)
+	{
+		if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
+		if (buf[i] == 'R') break;
+		++i;
+	}
+	buf[i] = '\0';
+	if (x != NULL)
+	{
+		if (sscanf(&buf[4], "%i", x) != 1)
+		{
+			perror("Failed to get cursor position");
+			exit(errno);
+		}
+		--(*x);
+	}
+	if (y != NULL)
+	{
+		if (sscanf(&buf[2], "%i", y) != 1)
+		{
+			perror("Failed to get cursor position");
+			exit(errno);
+		}
+		--(*y);
+	}
 }

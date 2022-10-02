@@ -14,7 +14,6 @@ void switch_to_alternate_buffer(void);
 void switch_to_normal_buffer(void);
 void hide_cursor(void);
 void show_cursor(void);
-void get_cursor_position(int *x, int *y);
 void set_cursor_position(int x, int y);
 void set_window_title(const char *title);
 void get_window_size(int *x, int *y);

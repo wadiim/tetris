@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include <time.h>
 
-void game_loop(Tetris *tetris);
-void redraw_screen(Tetris *tetris);
+static void game_loop(Tetris *tetris);
+static void redraw_screen(Tetris *tetris);
 
 int main()
 {

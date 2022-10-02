@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-int TETROMINO_BITMAPS[NUM_OF_TETROMINOS][BITMAP_SIZE] = {
+static int TETROMINO_BITMAPS[NUM_OF_TETROMINOS][BITMAP_SIZE] = {
 	{	/*   I   */
 		0, 0, 1, 0,
 		0, 0, 1, 0,
@@ -47,8 +47,9 @@ int TETROMINO_BITMAPS[NUM_OF_TETROMINOS][BITMAP_SIZE] = {
 	},
 };
 
-int is_colliding(Tetromino *tetromino, int new_pos, int width, int *cells);
-void overwrite_tetromino(Tetromino *tetromino, int val, int width, int *cells);
+static void remove_tetromino(Tetromino *tetromino, int width, int *cells);
+static int is_colliding(Tetromino *tetromino, int new_pos, int width, int *cells);
+static void overwrite_tetromino(Tetromino *tetromino, int val, int width, int *cells);
 
 void initialize_tetromino(Tetromino *tetromino, int width)
 {
@@ -73,11 +74,6 @@ int insert_tetromino(Tetromino *tetromino, int width, int *cells)
 	return 1;
 }
 
-void remove_tetromino(Tetromino *tetromino, int width, int *cells)
-{
-	overwrite_tetromino(tetromino, 0, width, cells);
-}
-
 int move_tetromino(Tetromino *tetromino, int step, int width, int *cells)
 {
 	if (is_colliding(tetromino, tetromino->pos + step, width, cells))
@@ -88,6 +84,11 @@ int move_tetromino(Tetromino *tetromino, int step, int width, int *cells)
 	tetromino->pos += step;
 	insert_tetromino(tetromino, width, cells);
 	return 1;
+}
+
+void remove_tetromino(Tetromino *tetromino, int width, int *cells)
+{
+	overwrite_tetromino(tetromino, 0, width, cells);
 }
 
 int is_colliding(Tetromino *tetromino, int new_pos, int width, int *cells)
