@@ -25,4 +25,12 @@ int move_active_tetromino_down(Tetris *tetris);
 int rotate_active_tetromino_clockwise(Tetris *tetris);
 int rotate_active_tetromino_anticlockwise(Tetris *tetris);
 
+/*
+ * Returns the index of the first row that was removed, or -1 if
+ * none row was removed.
+ */
+int remove_full_rows(Tetris *tetris);
+
+void remove_empty_lines(Tetris *tetris, int start);
+
 #endif

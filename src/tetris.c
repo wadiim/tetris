@@ -162,6 +162,65 @@ int rotate_active_tetromino_anticlockwise(Tetris *tetris)
 	return rotate_active_tetromino(tetris, rotate_tetromino_anticlockwise);
 }
 
+int remove_full_rows(Tetris *tetris)
+{
+	int row, col, is_full, first_removed = -1;
+	for (row = 1; row < tetris->height - 1; ++row)
+	{
+		is_full = 1;
+		for (col = 1; col < tetris->width - 1; ++col)
+		{
+			if (tetris->cells[col + row*tetris->width] == 0)
+			{
+				is_full = 0;
+				break;
+			}
+		}
+
+		if (is_full == 1)
+		{
+			if (first_removed == -1)
+			{
+				first_removed = row;
+			}
+			for (col = 1; col < tetris->width - 1; ++col)
+			{
+				tetris->cells[col + row*tetris->width] = 0;
+			}
+		}
+	}
+	return first_removed;
+}
+
+void remove_empty_lines(Tetris *tetris, int start)
+{
+	int row, tmp_row, col, is_empty;
+	for (row = tetris->height - 2; row >= start; --row)
+	{
+		is_empty = 1;
+		for (col = 1; col < tetris->width - 1; ++col)
+		{
+			if (tetris->cells[col + row*tetris->width] != 0)
+			{
+				is_empty = 0;
+				break;
+			}
+		}
+
+		if (is_empty == 1)
+		{
+			for (col = 1; col < tetris->width - 1; ++col)
+			{
+				for (tmp_row = row; tmp_row > 1; --tmp_row)
+				{
+					tetris->cells[col + tmp_row*tetris->width] = tetris->cells[col + (tmp_row - 1)*tetris->width];
+				}
+			}
+			++row;
+		}
+	}
+}
+
 int *get_cell_neighbours(int idx, int width, int *cells)
 {
 	int *n = malloc(4*sizeof(int));

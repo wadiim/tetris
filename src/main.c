@@ -9,6 +9,7 @@
 
 static void game_loop(Tetris *tetris);
 static void redraw_screen(Tetris *tetris);
+static int handle_bottom_colision(Tetris *tetris);
 
 int main()
 {
@@ -61,7 +62,11 @@ void game_loop(Tetris *tetris)
 			rotate_active_tetromino_anticlockwise(tetris);
 			break;
 		case ' ':
-			move_active_tetromino_down(tetris);
+			if (move_active_tetromino_down(tetris) == 0
+				&& handle_bottom_colision(tetris) == 0)
+			{
+				return;
+			}
 			break;
 		}
 		redraw_screen(tetris);
@@ -69,11 +74,10 @@ void game_loop(Tetris *tetris)
 		if (((float)(clock() - start) / CLOCKS_PER_SEC) > 0.0004)
 		{
 			if (move_active_tetromino_down(tetris) == 0
-				&& add_new_tetromino(tetris) == 0)
+				&& handle_bottom_colision(tetris) == 0)
 			{
 				return;
 			}
-			redraw_screen(tetris);
 			start = clock();
 		}
 	}
@@ -85,4 +89,19 @@ void redraw_screen(Tetris *tetris)
 		set_cursor_position(0, 0);
 		write(STDOUT_FILENO, str, strlen(str));
 		free(str);
+}
+
+static int handle_bottom_colision(Tetris *tetris)
+{
+		int first_removed = remove_full_rows(tetris);
+		if (first_removed != -1)
+		{
+			remove_empty_lines(tetris, first_removed);
+		}
+		if (add_new_tetromino(tetris) == 0)
+		{
+			return 0;
+		}
+		redraw_screen(tetris);
+		return 1;
 }
