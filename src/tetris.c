@@ -28,6 +28,7 @@ static char *BOX_CHARS[BOX_CHARS_SIZE] = {
 
 static int *get_cell_neighbours(int idx, int width, int *cells);
 static char *cell_to_box_char(int idx, int width, int *cells);
+static int rotate_active_tetromino(Tetris *tetris, int (*rotate)(Tetromino *tetromino, int width, int *cells));
 
 void initialize_tetris(Tetris *tetris, int width, int height)
 {
@@ -153,20 +154,12 @@ int move_active_tetromino_down(Tetris *tetris)
 
 int rotate_active_tetromino_clockwise(Tetris *tetris)
 {
-	int ret;
-	remove_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
-	ret = rotate_tetromino_clockwise(tetris->active_tetromino, tetris->width, tetris->cells);
-	insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
-	return ret;
+	return rotate_active_tetromino(tetris, rotate_tetromino_clockwise);
 }
 
 int rotate_active_tetromino_anticlockwise(Tetris *tetris)
 {
-	int ret;
-	remove_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
-	ret = rotate_tetromino_anticlockwise(tetris->active_tetromino, tetris->width, tetris->cells);
-	insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
-	return ret;
+	return rotate_active_tetromino(tetris, rotate_tetromino_anticlockwise);
 }
 
 int *get_cell_neighbours(int idx, int width, int *cells)
@@ -194,4 +187,13 @@ char *cell_to_box_char(int idx, int width, int *cells)
 	if (n[1] == n[0]) bchar_idx += 8;
 	free(n);
 	return BOX_CHARS[bchar_idx];
+}
+
+static int rotate_active_tetromino(Tetris *tetris, int (*rotate)(Tetromino *tetromino, int width, int *cells))
+{
+	int ret;
+	remove_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+	ret = rotate(tetris->active_tetromino, tetris->width, tetris->cells);
+	insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+	return ret;
 }

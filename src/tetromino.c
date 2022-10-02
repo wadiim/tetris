@@ -52,6 +52,9 @@ static int TETROMINO_BITMAPS[NUM_OF_TETROMINOS][BITMAP_SIZE] = {
 static int is_colliding(Tetromino *tetromino, int new_pos, int width, int *cells);
 static void overwrite_tetromino(Tetromino *tetromino, int val, int width, int *cells);
 static void swap_bitmaps(int (*a1)[BITMAP_SIZE], int (*a2)[BITMAP_SIZE]);
+static int map_idxs_in_clockwise_rotation(int x, int y);
+static int map_idxs_in_anticlockwise_rotation(int x, int y);
+int rotate_tetromino(Tetromino *tetromino, int width, int *cells, int (*idx_map)(int, int));
 
 void initialize_tetromino(Tetromino *tetromino, int width)
 {
@@ -90,56 +93,12 @@ int move_tetromino(Tetromino *tetromino, int step, int width, int *cells)
 
 int rotate_tetromino_clockwise(Tetromino *tetromino, int width, int *cells)
 {
-	int x, y, ret;
-	int bitmap[BITMAP_SIZE];
-
-	for (y = 0; y < BITMAP_WIDTH; ++y)
-	{
-		for (x = 0; x < BITMAP_WIDTH; ++x)
-		{
-			bitmap[x + y*BITMAP_WIDTH] = tetromino->bitmap[y + (BITMAP_WIDTH - x - 1)*BITMAP_WIDTH];
-		}
-	}
-
-	swap_bitmaps(&tetromino->bitmap, &bitmap);
-	if (is_colliding(tetromino, tetromino->pos, width, cells))
-	{
-		swap_bitmaps(&tetromino->bitmap, &bitmap);
-		ret = 0;
-	}
-	else
-	{
-		ret = 1;
-	}
-
-	return ret;
+	return rotate_tetromino(tetromino, width, cells, map_idxs_in_clockwise_rotation);
 }
 
 int rotate_tetromino_anticlockwise(Tetromino *tetromino, int width, int *cells)
 {
-	int x, y, ret;
-	int bitmap[BITMAP_SIZE];
-
-	for (y = 0; y < BITMAP_WIDTH; ++y)
-	{
-		for (x = 0; x < BITMAP_WIDTH; ++x)
-		{
-			bitmap[x + y*BITMAP_WIDTH] = tetromino->bitmap[(BITMAP_WIDTH - y - 1) + x*BITMAP_WIDTH];
-		}
-	}
-
-	swap_bitmaps(&tetromino->bitmap, &bitmap);
-	if (is_colliding(tetromino, tetromino->pos, width, cells))
-	{
-		swap_bitmaps(&tetromino->bitmap, &bitmap);
-		ret = 0;
-	}
-	else
-	{
-		ret = 1;
-	}
-
-	return ret;
+	return rotate_tetromino(tetromino, width, cells, map_idxs_in_anticlockwise_rotation);
 }
 
 void remove_tetromino(Tetromino *tetromino, int width, int *cells)
@@ -189,4 +148,41 @@ void swap_bitmaps(int (*a1)[BITMAP_SIZE], int (*a2)[BITMAP_SIZE])
 		(*a1)[i] = (*a2)[i];
 		(*a2)[i] = tmp;
 	}
+}
+
+static int map_idxs_in_clockwise_rotation(int x, int y)
+{
+	return y + (BITMAP_WIDTH - x - 1)*BITMAP_WIDTH;
+}
+
+static int map_idxs_in_anticlockwise_rotation(int x, int y)
+{
+	return (BITMAP_WIDTH - y - 1) + x*BITMAP_WIDTH;
+}
+
+int rotate_tetromino(Tetromino *tetromino, int width, int *cells, int (*idx_map)(int, int))
+{
+	int x, y, ret;
+	int bitmap[BITMAP_SIZE];
+
+	for (y = 0; y < BITMAP_WIDTH; ++y)
+	{
+		for (x = 0; x < BITMAP_WIDTH; ++x)
+		{
+			bitmap[x + y*BITMAP_WIDTH] = tetromino->bitmap[idx_map(x, y)];
+		}
+	}
+
+	swap_bitmaps(&tetromino->bitmap, &bitmap);
+	if (is_colliding(tetromino, tetromino->pos, width, cells))
+	{
+		swap_bitmaps(&tetromino->bitmap, &bitmap);
+		ret = 0;
+	}
+	else
+	{
+		ret = 1;
+	}
+
+	return ret;
 }
