@@ -22,5 +22,7 @@ int add_new_tetromino(Tetris *tetris);
 int move_active_tetromino_left(Tetris *tetris);
 int move_active_tetromino_right(Tetris *tetris);
 int move_active_tetromino_down(Tetris *tetris);
+int rotate_active_tetromino_clockwise(Tetris *tetris);
+int rotate_active_tetromino_anticlockwise(Tetris *tetris);
 
 #endif

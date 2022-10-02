@@ -52,6 +52,14 @@ void game_loop(Tetris *tetris)
 		case ARROW_RIGHT:
 			move_active_tetromino_right(tetris);
 			break;
+		case 'j':
+		case ARROW_DOWN:
+			rotate_active_tetromino_clockwise(tetris);
+			break;
+		case 'k':
+		case ARROW_UP:
+			rotate_active_tetromino_anticlockwise(tetris);
+			break;
 		case ' ':
 			move_active_tetromino_down(tetris);
 			break;

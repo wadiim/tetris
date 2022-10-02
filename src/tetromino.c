@@ -1,6 +1,8 @@
 #include "tetromino.h"
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 static int TETROMINO_BITMAPS[NUM_OF_TETROMINOS][BITMAP_SIZE] = {
 	{	/*   I   */
@@ -47,9 +49,9 @@ static int TETROMINO_BITMAPS[NUM_OF_TETROMINOS][BITMAP_SIZE] = {
 	},
 };
 
-static void remove_tetromino(Tetromino *tetromino, int width, int *cells);
 static int is_colliding(Tetromino *tetromino, int new_pos, int width, int *cells);
 static void overwrite_tetromino(Tetromino *tetromino, int val, int width, int *cells);
+static void swap_bitmaps(int (*a1)[BITMAP_SIZE], int (*a2)[BITMAP_SIZE]);
 
 void initialize_tetromino(Tetromino *tetromino, int width)
 {
@@ -84,6 +86,60 @@ int move_tetromino(Tetromino *tetromino, int step, int width, int *cells)
 	tetromino->pos += step;
 	insert_tetromino(tetromino, width, cells);
 	return 1;
+}
+
+int rotate_tetromino_clockwise(Tetromino *tetromino, int width, int *cells)
+{
+	int x, y, ret;
+	int bitmap[BITMAP_SIZE];
+
+	for (y = 0; y < BITMAP_WIDTH; ++y)
+	{
+		for (x = 0; x < BITMAP_WIDTH; ++x)
+		{
+			bitmap[x + y*BITMAP_WIDTH] = tetromino->bitmap[y + (BITMAP_WIDTH - x - 1)*BITMAP_WIDTH];
+		}
+	}
+
+	swap_bitmaps(&tetromino->bitmap, &bitmap);
+	if (is_colliding(tetromino, tetromino->pos, width, cells))
+	{
+		swap_bitmaps(&tetromino->bitmap, &bitmap);
+		ret = 0;
+	}
+	else
+	{
+		ret = 1;
+	}
+
+	return ret;
+}
+
+int rotate_tetromino_anticlockwise(Tetromino *tetromino, int width, int *cells)
+{
+	int x, y, ret;
+	int bitmap[BITMAP_SIZE];
+
+	for (y = 0; y < BITMAP_WIDTH; ++y)
+	{
+		for (x = 0; x < BITMAP_WIDTH; ++x)
+		{
+			bitmap[x + y*BITMAP_WIDTH] = tetromino->bitmap[(BITMAP_WIDTH - y - 1) + x*BITMAP_WIDTH];
+		}
+	}
+
+	swap_bitmaps(&tetromino->bitmap, &bitmap);
+	if (is_colliding(tetromino, tetromino->pos, width, cells))
+	{
+		swap_bitmaps(&tetromino->bitmap, &bitmap);
+		ret = 0;
+	}
+	else
+	{
+		ret = 1;
+	}
+
+	return ret;
 }
 
 void remove_tetromino(Tetromino *tetromino, int width, int *cells)
@@ -121,5 +177,16 @@ void overwrite_tetromino(Tetromino *tetromino, int val, int width, int *cells)
 				cells[tetromino->pos + x + y*width] = val;
 			}
 		}
+	}
+}
+
+void swap_bitmaps(int (*a1)[BITMAP_SIZE], int (*a2)[BITMAP_SIZE])
+{
+	int i, tmp;
+	for (i = 0; i < BITMAP_SIZE; ++i)
+	{
+		tmp = (*a1)[i];
+		(*a1)[i] = (*a2)[i];
+		(*a2)[i] = tmp;
 	}
 }

@@ -15,6 +15,9 @@ typedef struct Tetromino
 
 void initialize_tetromino(Tetromino *tetromino, int width);
 int insert_tetromino(Tetromino *tetromino, int width, int *cells);
+void remove_tetromino(Tetromino *tetromino, int width, int *cells);
 int move_tetromino(Tetromino *tetromino, int step, int width, int *cells);
+int rotate_tetromino_clockwise(Tetromino *tetromino, int width, int *cells);
+int rotate_tetromino_anticlockwise(Tetromino *tetromino, int width, int *cells);
 
 #endif

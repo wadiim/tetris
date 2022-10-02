@@ -151,6 +151,24 @@ int move_active_tetromino_down(Tetris *tetris)
 			tetris->cells);
 }
 
+int rotate_active_tetromino_clockwise(Tetris *tetris)
+{
+	int ret;
+	remove_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+	ret = rotate_tetromino_clockwise(tetris->active_tetromino, tetris->width, tetris->cells);
+	insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+	return ret;
+}
+
+int rotate_active_tetromino_anticlockwise(Tetris *tetris)
+{
+	int ret;
+	remove_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+	ret = rotate_tetromino_anticlockwise(tetris->active_tetromino, tetris->width, tetris->cells);
+	insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+	return ret;
+}
+
 int *get_cell_neighbours(int idx, int width, int *cells)
 {
 	int *n = malloc(4*sizeof(int));
