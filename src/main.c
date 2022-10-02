@@ -85,23 +85,23 @@ void game_loop(Tetris *tetris)
 
 void redraw_screen(Tetris *tetris)
 {
-		char *str = tetris_to_str(tetris);
-		set_cursor_position(0, 0);
-		write(STDOUT_FILENO, str, strlen(str));
-		free(str);
+	char *str = tetris_to_str(tetris);
+	set_cursor_position(0, 0);
+	write(STDOUT_FILENO, str, strlen(str));
+	free(str);
 }
 
 static int handle_bottom_colision(Tetris *tetris)
 {
-		int first_removed = remove_full_rows(tetris);
-		if (first_removed != -1)
-		{
-			remove_empty_rows(tetris, first_removed);
-		}
-		if (add_new_tetromino(tetris) == 0)
-		{
-			return 0;
-		}
-		redraw_screen(tetris);
-		return 1;
+	int first_removed = remove_full_rows(tetris);
+	if (first_removed != -1)
+	{
+		remove_empty_rows(tetris, first_removed);
+	}
+	if (add_new_tetromino(tetris) == 0)
+	{
+		return 0;
+	}
+	redraw_screen(tetris);
+	return 1;
 }
