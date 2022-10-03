@@ -217,6 +217,7 @@ void remove_empty_rows(Tetris *tetris, int start)
 				}
 			}
 			++row;
+			++start;
 		}
 	}
 }
