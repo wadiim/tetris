@@ -20,5 +20,9 @@ void get_window_size(int *x, int *y);
 void switch_to_raw_mode(void);
 void switch_to_cooked_mode(void);
 int get_input(void);
+void clear_screen(void);
+void init_sigaction(void);
+void create_signal_handler(int signal, void (*handler)(int));
+void destroy_signal_handler(int signal);
 
 #endif

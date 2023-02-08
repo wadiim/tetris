@@ -5,11 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <time.h>
 
 static void game_loop(Tetris *tetris);
 static void redraw_screen(Tetris *tetris);
 static int handle_bottom_colision(Tetris *tetris);
+static void handle_signal(int signal);
 
 int main()
 {
@@ -27,6 +29,8 @@ int main()
 	hide_cursor();
 	atexit(show_cursor);
 	set_window_title("Tetris");
+	init_sigaction();
+	create_signal_handler(SIGWINCH, &handle_signal);
 
 	game_loop(&tetris);
 
@@ -83,6 +87,16 @@ void redraw_screen(Tetris *tetris)
 	set_cursor_position(0, 0);
 	write(STDOUT_FILENO, str, strlen(str));
 	free(str);
+}
+
+void handle_signal(int signal)
+{
+	switch (signal)
+	{
+	case SIGWINCH:
+		clear_screen();
+		break;
+	}
 }
 
 static int handle_bottom_colision(Tetris *tetris)

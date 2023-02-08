@@ -1,13 +1,17 @@
 #include "term.h"
 
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 
 static struct termios orig_termios;
+static struct sigaction sa;
 
 static int get_char(void *c);
 static void get_cursor_position(int *x, int *y);
@@ -194,5 +198,41 @@ void get_cursor_position(int *x, int *y)
 			exit(errno);
 		}
 		--(*y);
+	}
+}
+
+void clear_screen(void)
+{
+	if (write(STDOUT_FILENO, "\x1b[2J", 4) != 4
+		|| write(STDOUT_FILENO, "\x1b[H", 3) != 3)
+	{
+		perror("Failed to clear screen");
+		exit(errno);
+	}
+}
+
+void init_sigaction(void)
+{
+	sa.sa_flags = SA_RESTART;
+	sigfillset(&sa.sa_mask);
+}
+
+void create_signal_handler(int signal, void (*handler)(int))
+{
+	sa.sa_handler = handler;
+	if (sigaction(signal, &sa, NULL) == -1)
+	{
+		perror("Failed to create signal handler");
+		exit(errno);
+	}
+}
+
+void destroy_signal_handler(int signal)
+{
+	sa.sa_handler = SIG_DFL;
+	if (sigaction(signal, &sa, NULL) == -1)
+	{
+		perror("Failed to destroy signal handler");
+		exit(errno);
 	}
 }
