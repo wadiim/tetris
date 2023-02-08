@@ -24,6 +24,7 @@ int move_active_tetromino_right(Tetris *tetris);
 int move_active_tetromino_down(Tetris *tetris);
 int rotate_active_tetromino_clockwise(Tetris *tetris);
 int rotate_active_tetromino_anticlockwise(Tetris *tetris);
+void drop_active_tetromino(Tetris *tetris);
 
 /*
  * Returns the index of the first row that was removed, or -1 if

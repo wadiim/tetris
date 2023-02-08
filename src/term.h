@@ -3,6 +3,7 @@
 
 enum KEY
 {
+	ENTER = 13,
 	ESC = 27,
 	ARROW_LEFT = 164,
 	ARROW_UP,

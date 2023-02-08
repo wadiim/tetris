@@ -67,6 +67,9 @@ void game_loop(Tetris *tetris)
 		case ARROW_UP:
 			rotate_active_tetromino_anticlockwise(tetris);
 			break;
+		case ENTER:
+			drop_active_tetromino(tetris);
+			break;
 		}
 
 		if (input == ' ' || ((float)(clock() - start) / CLOCKS_PER_SEC) > 0.0004)

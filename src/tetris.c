@@ -162,6 +162,13 @@ int rotate_active_tetromino_anticlockwise(Tetris *tetris)
 	return rotate_active_tetromino(tetris, rotate_tetromino_anticlockwise);
 }
 
+void drop_active_tetromino(Tetris *tetris)
+{
+	while (move_active_tetromino_down(tetris))
+	{
+	}
+}
+
 int remove_full_rows(Tetris *tetris)
 {
 	int row, col, is_full, first_removed = -1;
