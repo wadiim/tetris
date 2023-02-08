@@ -2,6 +2,8 @@
 #include "tetris.h"
 #include "term.h"
 
+#define _DEFAULT_SOURCE
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -104,6 +106,8 @@ static int handle_bottom_colision(Tetris *tetris)
 	int first_removed = remove_full_rows(tetris);
 	if (first_removed != -1)
 	{
+		redraw_screen(tetris);
+		usleep(400000);
 		remove_empty_rows(tetris, first_removed);
 	}
 	return (add_new_tetromino(tetris) != 0);
