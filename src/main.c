@@ -89,8 +89,11 @@ void game_loop(Tetris *tetris)
 void redraw_screen(Tetris *tetris)
 {
 	char *str = tetris_to_str(tetris);
+	char *preview_str = get_tetromino_preview_str(tetris);
 	set_cursor_position(0, 0);
 	write(STDOUT_FILENO, str, strlen(str));
+	write(STDOUT_FILENO, preview_str, strlen(preview_str));
+	free(preview_str);
 	free(str);
 }
 

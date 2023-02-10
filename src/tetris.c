@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <errno.h>
 
+#define TETROMINO_PREVIEW_WIDTH 8
+#define TETROMINO_PREVIEW_HEIGHT 8
+
 static char *BOX_CHARS[BOX_CHARS_SIZE] = {
 	"\xE2\x94\xBC\xE2\x94\x80", /* 0b0000 -> "┼─" */
 	"\xE2\x94\x9C\xE2\x94\x80", /* 0b0001 -> "├─" */
@@ -29,6 +32,7 @@ static char *BOX_CHARS[BOX_CHARS_SIZE] = {
 static int *get_cell_neighbours(int idx, int width, int *cells);
 static char *cell_to_box_char(int idx, int width, int *cells);
 static int rotate_active_tetromino(Tetris *tetris, int (*rotate)(Tetromino *tetromino, int width, int *cells));
+static int *generate_tetromino_preview_bitmap(Tetromino *tetromino);
 
 void initialize_tetris(Tetris *tetris, int width, int height)
 {
@@ -59,6 +63,14 @@ void initialize_tetris(Tetris *tetris, int width, int height)
 		tetris->cells[i-1] = 1;
 		tetris->cells[i] = 1;
 	}
+
+	/* Initialize next tetromino */
+	if ((tetris->next_tetromino = malloc(sizeof(Tetromino))) == NULL)
+	{
+		perror("Failed to initialize next tetromino");
+		exit(errno);
+	}
+	initialize_tetromino(tetris->next_tetromino, tetris->width);
 }
 
 void terminate_tetris(Tetris *tetris)
@@ -75,7 +87,7 @@ char *tetris_to_str(Tetris *tetris)
 
 	get_window_size(&wcols, &wrows);
 	vmsize = (wrows - tetris->height) / 2;
-	hmsize = (wcols - 2*tetris->width) / 2;
+	hmsize = (wcols - 2*tetris->width - TETROMINO_PREVIEW_WIDTH) / 2;
 	if ((str = malloc(((tetris->width + vmsize)*(tetris->height + hmsize) + 2)*3*2*sizeof(char))) == NULL)
 	{
 		perror("Failed to generate string representation of tetris");
@@ -116,15 +128,50 @@ char *tetris_to_str(Tetris *tetris)
 	return str;
 }
 
+char *get_tetromino_preview_str(Tetris *tetris)
+{
+	char *bchars;
+	int row, col, wrows, wcols, vmsize, hmsize, i = 0;
+
+	int *bitmap = generate_tetromino_preview_bitmap(tetris->next_tetromino);
+	char *preview_str = malloc((TETROMINO_PREVIEW_WIDTH + 8)*TETROMINO_PREVIEW_WIDTH*3*2*sizeof(char));
+
+	if (preview_str == NULL)
+	{
+		perror("Failed to allocate string for tetromino preview");
+		exit(errno);
+	}
+
+	get_window_size(&wcols, &wrows);
+	vmsize = (wrows - tetris->height) / 2;
+	hmsize = (wcols - 2*tetris->width - TETROMINO_PREVIEW_WIDTH) / 2 + tetris->width + TETROMINO_PREVIEW_WIDTH + 1;
+
+	for (row = 1; row < TETROMINO_PREVIEW_HEIGHT; ++row)
+	{
+		i += sprintf(preview_str + i, "\x1b[%i;%iH", row + vmsize, hmsize + 1);
+		for (col = 1; col < TETROMINO_PREVIEW_WIDTH; ++col)
+		{
+			bchars = cell_to_box_char(row*TETROMINO_PREVIEW_WIDTH + col, TETROMINO_PREVIEW_WIDTH, bitmap);
+			memcpy(preview_str + i, bchars, strlen(bchars));
+			i += strlen(bchars);
+		}
+	}
+	preview_str[i] = '\0';
+	free(bitmap);
+
+	return preview_str;
+}
+
 int add_new_tetromino(Tetris *tetris)
 {
 	free(tetris->active_tetromino);
-	if ((tetris->active_tetromino = malloc(sizeof(Tetromino))) == NULL)
+	tetris->active_tetromino = tetris->next_tetromino;
+	if ((tetris->next_tetromino = malloc(sizeof(Tetromino))) == NULL)
 	{
 		perror("Failed to add new tetromino");
 		exit(errno);
 	}
-	initialize_tetromino(tetris->active_tetromino, tetris->width);
+	initialize_tetromino(tetris->next_tetromino, tetris->width);
 	return insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
 }
 
@@ -263,4 +310,30 @@ static int rotate_active_tetromino(Tetris *tetris, int (*rotate)(Tetromino *tetr
 	ret = rotate(tetris->active_tetromino, tetris->width, tetris->cells);
 	insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
 	return ret;
+}
+
+static int *generate_tetromino_preview_bitmap(Tetromino *tetromino)
+{
+	int row, col, i;
+	int *bitmap = calloc(TETROMINO_PREVIEW_WIDTH*TETROMINO_PREVIEW_HEIGHT, sizeof(int));
+	if (bitmap == NULL)
+	{
+		perror("Failed to generate tetromino preview bitmap");
+		exit(errno);
+	}
+
+	for (i = 0; i < TETROMINO_PREVIEW_WIDTH; ++i)
+	{
+		bitmap[i] = bitmap[TETROMINO_PREVIEW_WIDTH*TETROMINO_PREVIEW_HEIGHT - i - 1] = bitmap[i*TETROMINO_PREVIEW_WIDTH] = bitmap[i*TETROMINO_PREVIEW_WIDTH + (TETROMINO_PREVIEW_WIDTH - 1)] = 1;
+	}
+
+	for (col = 0; col < 4; ++col)
+	{
+		for (row = 0; row < 4; ++row)
+		{
+			bitmap[(row + 2)*TETROMINO_PREVIEW_WIDTH + (col + 2)] = tetromino->bitmap[row*4 + col];
+		}
+	}
+
+	return bitmap;
 }
