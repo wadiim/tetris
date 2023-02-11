@@ -40,6 +40,7 @@ void initialize_tetris(Tetris *tetris, int width, int height)
 
 	tetris->width = width;
 	tetris->height = height;
+	tetris->points = 0;
 	tetris->active_tetromino = NULL;
 	if ((tetris->cells = malloc((cells_size)*sizeof(int))) == NULL)
 	{
@@ -162,6 +163,52 @@ char *get_tetromino_preview_str(Tetris *tetris)
 	return preview_str;
 }
 
+char *get_score_view_str(Tetris *tetris)
+{
+	char *score_view = malloc(8*3*3*2*sizeof(char));
+	int i = 0, j, wrows, wcols, vmsize, hmsize;
+
+	if (score_view == NULL)
+	{
+		perror("Failed to generate score view string");
+		exit(errno);
+	}
+
+	get_window_size(&wcols, &wrows);
+	vmsize = (wrows - tetris->height) / 2;
+	hmsize = (wcols - 2*tetris->width - TETROMINO_PREVIEW_WIDTH) / 2 + tetris->width + TETROMINO_PREVIEW_WIDTH + 1;
+
+	i += sprintf(score_view + i, "\x1b[%i;%iH%s", vmsize + 8, hmsize + 1, BOX_CHARS[9]);
+
+	for (j = 0; j < 5; ++j)
+	{
+		i += sprintf(score_view + i, "%s", BOX_CHARS[10]);
+	}
+
+	i += sprintf(score_view + i,
+			"%s\x1b[%i;%iH%s%10i%s\x1b[%i;%iH%s",
+			BOX_CHARS[12],
+			vmsize + 9,
+			hmsize + 1,
+			BOX_CHARS[5],
+			tetris->points,
+			BOX_CHARS[5],
+			vmsize + 10,
+			hmsize + 1,
+			BOX_CHARS[3]
+			);
+
+	for (j = 0; j < 5; ++j)
+	{
+		i += sprintf(score_view + i, "%s", BOX_CHARS[10]);
+	}
+
+	i += sprintf(score_view + i, "%s", BOX_CHARS[6]);
+
+	score_view[i] = '\0';
+	return score_view;
+}
+
 int add_new_tetromino(Tetris *tetris)
 {
 	free(tetris->active_tetromino);
@@ -218,7 +265,7 @@ void drop_active_tetromino(Tetris *tetris)
 
 int remove_full_rows(Tetris *tetris)
 {
-	int row, col, is_full, first_removed = -1;
+	int row, col, is_full, first_removed = -1, num_of_rows_removed = 0;
 	for (row = 1; row < tetris->height - 1; ++row)
 	{
 		is_full = 1;
@@ -241,8 +288,26 @@ int remove_full_rows(Tetris *tetris)
 			{
 				tetris->cells[col + row*tetris->width] = 0;
 			}
+			++num_of_rows_removed;
 		}
 	}
+
+	switch (num_of_rows_removed)
+	{
+	case 1:
+		tetris->points += 40;
+		break;
+	case 2:
+		tetris->points += 100;
+		break;
+	case 3:
+		tetris->points += 300;
+		break;
+	case 4:
+		tetris->points += 1200;
+		break;
+	}
+
 	return first_removed;
 }
 

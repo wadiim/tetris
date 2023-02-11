@@ -11,6 +11,7 @@ typedef struct Tetris
 	int width;
 	int height;
 	int *cells;
+	int points;
 	struct Tetromino *active_tetromino;
 	struct Tetromino *next_tetromino;
 } Tetris;
@@ -19,6 +20,7 @@ void initialize_tetris(Tetris *tetris, int width, int height);
 void terminate_tetris(Tetris *tetris);
 char *tetris_to_str(Tetris *tetris);
 char *get_tetromino_preview_str(Tetris *tetris);
+char *get_score_view_str(Tetris *tetris);
 
 int add_new_tetromino(Tetris *tetris);
 int move_active_tetromino_left(Tetris *tetris);
