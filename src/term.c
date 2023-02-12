@@ -52,17 +52,6 @@ void show_cursor(void)
 	}
 }
 
-void set_cursor_position(int x, int y)
-{
-	char buf[32] = "\0";
-	if (sprintf(buf, "\x1b[%i;%iH", y + 1, x + 1) < 6
-		|| write(STDOUT_FILENO, buf, sizeof(buf)) == -1)
-	{
-		perror("Failed to set cursor position");
-		exit(errno);
-	}
-}
-
 void set_window_title(const char *title)
 {
 	char buf[64] = "\0";

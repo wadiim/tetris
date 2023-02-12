@@ -1,23 +1,19 @@
 #ifndef TETROMINO_H
 #define TETROMINO_H
 
-#define BITMAP_SIZE 16
-#define BITMAP_WIDTH 4
-#define BOX_CHARS_SIZE 16
-#define NUM_OF_TETROMINOS 7
+#define TETROMINO_BITMAP_WIDTH 4
+#define TETROMINO_BITMAP_HEIGHT 4
+#define TETROMINO_BITMAP_SIZE 16
 
 typedef struct Tetromino
 {
 	int id;
 	int pos;
-	int bitmap[BITMAP_SIZE];
+	int bitmap[TETROMINO_BITMAP_SIZE];
 } Tetromino;
 
-void initialize_tetromino(Tetromino *tetromino, int width);
-int insert_tetromino(Tetromino *tetromino, int width, int *cells);
-void remove_tetromino(Tetromino *tetromino, int width, int *cells);
-int move_tetromino(Tetromino *tetromino, int step, int width, int *cells);
-int rotate_tetromino_clockwise(Tetromino *tetromino, int width, int *cells);
-int rotate_tetromino_anticlockwise(Tetromino *tetromino, int width, int *cells);
+void initialize_tetromino(Tetromino *tetromino, int pos);
+void rotate_tetromino_clockwise(Tetromino *tetromino);
+void rotate_tetromino_anticlockwise(Tetromino *tetromino);
 
 #endif

@@ -7,59 +7,39 @@
 #include <stdio.h>
 #include <errno.h>
 
-#define TETROMINO_PREVIEW_WIDTH 8
-#define TETROMINO_PREVIEW_HEIGHT 8
+#define CELLS_SIZE BOARD_ROWS*BOARD_COLS
+#define START_POS BOARD_COLS + BOARD_COLS/2 - TETROMINO_BITMAP_WIDTH/2
 
-static char *BOX_CHARS[BOX_CHARS_SIZE] = {
-	"\xE2\x94\xBC\xE2\x94\x80", /* 0b0000 -> "┼─" */
-	"\xE2\x94\x9C\xE2\x94\x80", /* 0b0001 -> "├─" */
-	"\xE2\x94\xB4\xE2\x94\x80", /* 0b0010 -> "┴─" */
-	"\xE2\x94\x94\xE2\x94\x80", /* 0b0011 -> "└─" */
-	"\xE2\x94\xA4 ",            /* 0b0100 -> "┤ " */
-	"\xE2\x94\x82 ",            /* 0b0101 -> "│ " */
-	"\xE2\x94\x98 ",            /* 0b0110 -> "┘ " */
-	"",                         /* 0b0111 -> ""   */
-	"\xE2\x94\xAC\xE2\x94\x80", /* 0b1000 -> "┬─" */
-	"\xE2\x94\x8C\xE2\x94\x80", /* 0b1001 -> "┌─" */
-	"\xE2\x94\x80\xE2\x94\x80", /* 0b1010 -> "──" */
-	"",                         /* 0b1011 -> ""   */
-	"\xE2\x94\x90 ",            /* 0b1100 -> "┐ " */
-	"",                         /* 0b1101 -> ""   */
-	"",                         /* 0b1110 -> ""   */
-	"  "                        /* 0b1111 -> "  " */
-};
+static int is_colliding(Tetris *tetris, int new_pos);
+static int move_active_tetromino(Tetris *tetris, int step);
+static int insert_tetromino(Tetris *tetris, Tetromino *tetromino);
+static void remove_tetromino(Tetris *tetris, Tetromino *tetromino);
+static void overwrite_tetromino(Tetris *tetris, Tetromino *tetromino, int val);
+static int rotate_active_tetromino(Tetris *tetris,
+		void (*rotate)(Tetromino *tetromino),
+		void (*undo)(Tetromino *tetromino));
 
-static int *get_cell_neighbours(int idx, int width, int *cells);
-static char *cell_to_box_char(int idx, int width, int *cells);
-static int rotate_active_tetromino(Tetris *tetris, int (*rotate)(Tetromino *tetromino, int width, int *cells));
-static int *generate_tetromino_preview_bitmap(Tetromino *tetromino);
-
-void initialize_tetris(Tetris *tetris, int width, int height)
+void initialize_tetris(Tetris *tetris)
 {
-	int i, cells_size = width * height;
+	int i;
 
-	tetris->width = width;
-	tetris->height = height;
-	tetris->points = 0;
 	tetris->active_tetromino = NULL;
-	if ((tetris->cells = malloc((cells_size)*sizeof(int))) == NULL)
+
+	if ((tetris->cells = calloc(CELLS_SIZE, sizeof(int))) == NULL)
 	{
 		perror("Failed to initialize tetris");
 		exit(errno);
 	}
 
-	/* Set all cells to 0 */
-	memset(tetris->cells, 0, (cells_size)*sizeof(int));
-
 	/* Add horizontal borders */
-	for (i = 0; i < width; ++i)
+	for (i = 0; i < BOARD_COLS; ++i)
 	{
 		tetris->cells[i] = 1;
-		tetris->cells[cells_size - i - 1] = 1;
+		tetris->cells[CELLS_SIZE - i - 1] = 1;
 	}
 
 	/* Add vertical borders */
-	for (i = width; i < cells_size; i += width)
+	for (i = BOARD_COLS; i < CELLS_SIZE; i += BOARD_COLS)
 	{
 		tetris->cells[i-1] = 1;
 		tetris->cells[i] = 1;
@@ -71,142 +51,13 @@ void initialize_tetris(Tetris *tetris, int width, int height)
 		perror("Failed to initialize next tetromino");
 		exit(errno);
 	}
-	initialize_tetromino(tetris->next_tetromino, tetris->width);
+	initialize_tetromino(tetris->next_tetromino, START_POS);
 }
 
 void terminate_tetris(Tetris *tetris)
 {
 	free(tetris->cells);
 	free(tetris->active_tetromino);
-}
-
-char *tetris_to_str(Tetris *tetris)
-{
-	char *str;
-	char *bchars;
-	int i, j = 0, k, wrows, wcols, vmsize, hmsize;
-
-	get_window_size(&wcols, &wrows);
-	vmsize = (wrows - tetris->height) / 2;
-	hmsize = (wcols - 2*tetris->width - TETROMINO_PREVIEW_WIDTH) / 2;
-	if ((str = malloc(((tetris->width + vmsize)*(tetris->height + hmsize) + 2)*3*2*sizeof(char))) == NULL)
-	{
-		perror("Failed to generate string representation of tetris");
-		exit(errno);
-	}
-
-	/* Center vertically */
-	for (i = 0; i < vmsize; ++i)
-	{
-		memcpy(str + j, "\n\r", 2);
-		j += 2;
-	}
-
-	for (i = tetris->width; i < tetris->width * tetris->height; ++i)
-	{
-		/* Center horizontally */
-		if (i % tetris->width == 0)
-		{
-			for (k = 0; k < hmsize; ++k)
-			{
-				str[j++] = ' ';
-			}
-			continue;
-		}
-
-		/* Generate board */
-		bchars = cell_to_box_char(i, tetris->width, tetris->cells);
-		memcpy(str + j, bchars, strlen(bchars));
-		j += strlen(bchars);
-		if (i > 0 && (i + 1) % tetris->width == 0)
-		{
-			memcpy(str + j, "\n\r", 2);
-			j += 2;
-		}
-	}
-
-	str[j] = '\0';
-	return str;
-}
-
-char *get_tetromino_preview_str(Tetris *tetris)
-{
-	char *bchars;
-	int row, col, wrows, wcols, vmsize, hmsize, i = 0;
-
-	int *bitmap = generate_tetromino_preview_bitmap(tetris->next_tetromino);
-	char *preview_str = malloc((TETROMINO_PREVIEW_WIDTH + 8)*TETROMINO_PREVIEW_WIDTH*3*2*sizeof(char));
-
-	if (preview_str == NULL)
-	{
-		perror("Failed to allocate string for tetromino preview");
-		exit(errno);
-	}
-
-	get_window_size(&wcols, &wrows);
-	vmsize = (wrows - tetris->height) / 2;
-	hmsize = (wcols - 2*tetris->width - TETROMINO_PREVIEW_WIDTH) / 2 + tetris->width + TETROMINO_PREVIEW_WIDTH + 1;
-
-	for (row = 1; row < TETROMINO_PREVIEW_HEIGHT; ++row)
-	{
-		i += sprintf(preview_str + i, "\x1b[%i;%iH", row + vmsize, hmsize + 1);
-		for (col = 1; col < TETROMINO_PREVIEW_WIDTH; ++col)
-		{
-			bchars = cell_to_box_char(row*TETROMINO_PREVIEW_WIDTH + col, TETROMINO_PREVIEW_WIDTH, bitmap);
-			memcpy(preview_str + i, bchars, strlen(bchars));
-			i += strlen(bchars);
-		}
-	}
-	preview_str[i] = '\0';
-	free(bitmap);
-
-	return preview_str;
-}
-
-char *get_score_view_str(Tetris *tetris)
-{
-	char *score_view = malloc(8*3*3*2*sizeof(char));
-	int i = 0, j, wrows, wcols, vmsize, hmsize;
-
-	if (score_view == NULL)
-	{
-		perror("Failed to generate score view string");
-		exit(errno);
-	}
-
-	get_window_size(&wcols, &wrows);
-	vmsize = (wrows - tetris->height) / 2;
-	hmsize = (wcols - 2*tetris->width - TETROMINO_PREVIEW_WIDTH) / 2 + tetris->width + TETROMINO_PREVIEW_WIDTH + 1;
-
-	i += sprintf(score_view + i, "\x1b[%i;%iH%s", vmsize + 8, hmsize + 1, BOX_CHARS[9]);
-
-	for (j = 0; j < 5; ++j)
-	{
-		i += sprintf(score_view + i, "%s", BOX_CHARS[10]);
-	}
-
-	i += sprintf(score_view + i,
-			"%s\x1b[%i;%iH%s%10i%s\x1b[%i;%iH%s",
-			BOX_CHARS[12],
-			vmsize + 9,
-			hmsize + 1,
-			BOX_CHARS[5],
-			tetris->points,
-			BOX_CHARS[5],
-			vmsize + 10,
-			hmsize + 1,
-			BOX_CHARS[3]
-			);
-
-	for (j = 0; j < 5; ++j)
-	{
-		i += sprintf(score_view + i, "%s", BOX_CHARS[10]);
-	}
-
-	i += sprintf(score_view + i, "%s", BOX_CHARS[6]);
-
-	score_view[i] = '\0';
-	return score_view;
 }
 
 int add_new_tetromino(Tetris *tetris)
@@ -218,42 +69,37 @@ int add_new_tetromino(Tetris *tetris)
 		perror("Failed to add new tetromino");
 		exit(errno);
 	}
-	initialize_tetromino(tetris->next_tetromino, tetris->width);
-	return insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
+	initialize_tetromino(tetris->next_tetromino, START_POS);
+	return insert_tetromino(tetris, tetris->active_tetromino);
 }
 
 int move_active_tetromino_left(Tetris *tetris)
 {
-	return move_tetromino(tetris->active_tetromino,
-			-1,
-			tetris->width,
-			tetris->cells);
+	return move_active_tetromino(tetris, -1);
 }
 
 int move_active_tetromino_right(Tetris *tetris)
 {
-	return move_tetromino(tetris->active_tetromino,
-			1,
-			tetris->width,
-			tetris->cells);
+	return move_active_tetromino(tetris, 1);
 }
 
 int move_active_tetromino_down(Tetris *tetris)
 {
-	return move_tetromino(tetris->active_tetromino,
-			tetris->width,
-			tetris->width,
-			tetris->cells);
+	return move_active_tetromino(tetris, BOARD_COLS);
 }
 
 int rotate_active_tetromino_clockwise(Tetris *tetris)
 {
-	return rotate_active_tetromino(tetris, rotate_tetromino_clockwise);
+	return rotate_active_tetromino(tetris,
+			rotate_tetromino_clockwise,
+			rotate_tetromino_anticlockwise);
 }
 
 int rotate_active_tetromino_anticlockwise(Tetris *tetris)
 {
-	return rotate_active_tetromino(tetris, rotate_tetromino_anticlockwise);
+	return rotate_active_tetromino(tetris,
+			rotate_tetromino_anticlockwise,
+			rotate_tetromino_clockwise);
 }
 
 void drop_active_tetromino(Tetris *tetris)
@@ -265,13 +111,16 @@ void drop_active_tetromino(Tetris *tetris)
 
 int remove_full_rows(Tetris *tetris)
 {
-	int row, col, is_full, first_removed = -1, num_of_rows_removed = 0;
-	for (row = 1; row < tetris->height - 1; ++row)
+	int row, col, is_full, num_of_rows_removed = 0;
+	int start = tetris->active_tetromino->pos / BOARD_COLS;
+	int end = (start + TETROMINO_BITMAP_HEIGHT > BOARD_ROWS - 1) ? BOARD_ROWS - 1 : start + TETROMINO_BITMAP_HEIGHT;
+
+	for (row = start; row < end; ++row)
 	{
 		is_full = 1;
-		for (col = 1; col < tetris->width - 1; ++col)
+		for (col = 1; col < BOARD_COLS - 1; ++col)
 		{
-			if (tetris->cells[col + row*tetris->width] == 0)
+			if (tetris->cells[col + row*BOARD_COLS] == 0)
 			{
 				is_full = 0;
 				break;
@@ -280,46 +129,28 @@ int remove_full_rows(Tetris *tetris)
 
 		if (is_full == 1)
 		{
-			if (first_removed == -1)
+			for (col = 1; col < BOARD_COLS - 1; ++col)
 			{
-				first_removed = row;
-			}
-			for (col = 1; col < tetris->width - 1; ++col)
-			{
-				tetris->cells[col + row*tetris->width] = 0;
+				tetris->cells[col + row*BOARD_COLS] = 0;
 			}
 			++num_of_rows_removed;
 		}
 	}
 
-	switch (num_of_rows_removed)
-	{
-	case 1:
-		tetris->points += 40;
-		break;
-	case 2:
-		tetris->points += 100;
-		break;
-	case 3:
-		tetris->points += 300;
-		break;
-	case 4:
-		tetris->points += 1200;
-		break;
-	}
-
-	return first_removed;
+	return num_of_rows_removed;
 }
 
-void remove_empty_rows(Tetris *tetris, int start)
+void remove_empty_rows(Tetris *tetris)
 {
 	int row, tmp_row, col, is_empty;
-	for (row = tetris->height - 2; row >= start; --row)
+	int start = tetris->active_tetromino->pos / BOARD_COLS;
+
+	for (row = BOARD_ROWS - 2; row >= start; --row)
 	{
 		is_empty = 1;
-		for (col = 1; col < tetris->width - 1; ++col)
+		for (col = 1; col < BOARD_COLS - 1; ++col)
 		{
-			if (tetris->cells[col + row*tetris->width] != 0)
+			if (tetris->cells[col + row*BOARD_COLS] != 0)
 			{
 				is_empty = 0;
 				break;
@@ -328,11 +159,11 @@ void remove_empty_rows(Tetris *tetris, int start)
 
 		if (is_empty == 1)
 		{
-			for (col = 1; col < tetris->width - 1; ++col)
+			for (col = 1; col < BOARD_COLS - 1; ++col)
 			{
 				for (tmp_row = row; tmp_row > 1; --tmp_row)
 				{
-					tetris->cells[col + tmp_row*tetris->width] = tetris->cells[col + (tmp_row - 1)*tetris->width];
+					tetris->cells[col + tmp_row*BOARD_COLS] = tetris->cells[col + (tmp_row - 1)*BOARD_COLS];
 				}
 			}
 			++row;
@@ -341,64 +172,80 @@ void remove_empty_rows(Tetris *tetris, int start)
 	}
 }
 
-int *get_cell_neighbours(int idx, int width, int *cells)
+static int is_colliding(Tetris *tetris, int new_pos)
 {
-	int *n = malloc(4*sizeof(int));
-	if (n == NULL)
+	int x, y;
+	for (y = 0; y < TETROMINO_BITMAP_WIDTH; ++y)
 	{
-		perror("Failed to get cell's neighbours");
-		exit(errno);
-	}
-	n[0] = (idx - width - 1 < 0) ? 0 : cells[idx - width - 1];
-	n[1] = (idx - width < 0) ? 0 : cells[idx - width];
-	n[2] = (idx - 1 < 0) ? 0 : cells[idx - 1];
-	n[3] = cells[idx];
-	return n;
-}
-
-char *cell_to_box_char(int idx, int width, int *cells)
-{
-	int bchar_idx = 0;
-	int *n = get_cell_neighbours(idx, width, cells);
-	if (n[0] == n[2]) bchar_idx += 1;
-	if (n[2] == n[3]) bchar_idx += 2;
-	if (n[3] == n[1]) bchar_idx += 4;
-	if (n[1] == n[0]) bchar_idx += 8;
-	free(n);
-	return BOX_CHARS[bchar_idx];
-}
-
-static int rotate_active_tetromino(Tetris *tetris, int (*rotate)(Tetromino *tetromino, int width, int *cells))
-{
-	int ret;
-	remove_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
-	ret = rotate(tetris->active_tetromino, tetris->width, tetris->cells);
-	insert_tetromino(tetris->active_tetromino, tetris->width, tetris->cells);
-	return ret;
-}
-
-static int *generate_tetromino_preview_bitmap(Tetromino *tetromino)
-{
-	int row, col, i;
-	int *bitmap = calloc(TETROMINO_PREVIEW_WIDTH*TETROMINO_PREVIEW_HEIGHT, sizeof(int));
-	if (bitmap == NULL)
-	{
-		perror("Failed to generate tetromino preview bitmap");
-		exit(errno);
-	}
-
-	for (i = 0; i < TETROMINO_PREVIEW_WIDTH; ++i)
-	{
-		bitmap[i] = bitmap[TETROMINO_PREVIEW_WIDTH*TETROMINO_PREVIEW_HEIGHT - i - 1] = bitmap[i*TETROMINO_PREVIEW_WIDTH] = bitmap[i*TETROMINO_PREVIEW_WIDTH + (TETROMINO_PREVIEW_WIDTH - 1)] = 1;
-	}
-
-	for (col = 0; col < 4; ++col)
-	{
-		for (row = 0; row < 4; ++row)
+		for (x = 0; x < TETROMINO_BITMAP_WIDTH; ++x)
 		{
-			bitmap[(row + 2)*TETROMINO_PREVIEW_WIDTH + (col + 2)] = tetromino->bitmap[row*4 + col];
+			if (tetris->active_tetromino->bitmap[x + y*TETROMINO_BITMAP_WIDTH] == 1
+				&& tetris->cells[new_pos + x + y*BOARD_COLS] != 0
+				&& tetris->cells[new_pos + x + y*BOARD_COLS] != tetris->active_tetromino->id)
+			{
+				return 1;
+			}
 		}
 	}
+	return 0;
+}
 
-	return bitmap;
+int move_active_tetromino(Tetris *tetris, int step)
+{
+	if (is_colliding(tetris, tetris->active_tetromino->pos + step))
+	{
+		return 0;
+	}
+	remove_tetromino(tetris, tetris->active_tetromino);
+	tetris->active_tetromino->pos += step;
+	insert_tetromino(tetris, tetris->active_tetromino);
+	return 1;
+}
+
+int insert_tetromino(Tetris *tetris, Tetromino *tetromino)
+{
+	if (is_colliding(tetris, tetromino->pos))
+	{
+		return 0;
+	}
+	overwrite_tetromino(tetris, tetromino, tetromino->id);
+	return 1;
+}
+
+void remove_tetromino(Tetris *tetris, Tetromino *tetromino)
+{
+	overwrite_tetromino(tetris, tetromino, 0);
+}
+
+void overwrite_tetromino(Tetris *tetris, Tetromino *tetromino, int val)
+{
+	int x, y;
+	for (y = 0; y < TETROMINO_BITMAP_WIDTH; ++y)
+	{
+		for (x = 0; x < TETROMINO_BITMAP_WIDTH; ++x)
+		{
+			if (tetromino->bitmap[x + y*TETROMINO_BITMAP_WIDTH] == 1)
+			{
+				tetris->cells[tetromino->pos + x + y*BOARD_COLS] = val;
+			}
+		}
+	}
+}
+
+static int rotate_active_tetromino(Tetris *tetris, void (*rotate)(Tetromino *tetromino), void (*undo)(Tetromino *tetromino))
+{
+	int ret;
+	remove_tetromino(tetris, tetris->active_tetromino);
+	rotate(tetris->active_tetromino);
+	if (is_colliding(tetris, tetris->active_tetromino->pos))
+	{
+		undo(tetris->active_tetromino);
+		ret = 0;
+	}
+	else
+	{
+		ret = 1;
+	}
+	insert_tetromino(tetris, tetris->active_tetromino);
+	return ret;
 }
