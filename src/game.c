@@ -121,6 +121,14 @@ static void update_screen(Game *game)
 	char *score_view_string;
 
 	get_window_size(&wcols, &wrows);
+
+	if (wcols < ((BOARD_COLS - 1) + (TETROMINO_PREVIEW_COLS - 1))*CELL_WIDTH_IN_BOX_SEQS
+		|| wrows < (BOARD_ROWS - 1))
+	{
+		perror("Too small window size");
+		exit(EXIT_FAILURE);
+	}
+
 	start_x = (wcols - CELL_WIDTH_IN_BOX_SEQS*BOARD_COLS - TETROMINO_PREVIEW_COLS) / 2;
 	start_y = (wrows - BOARD_ROWS) / 2;
 
