@@ -1,5 +1,6 @@
 #include "game.h"
 #include "term.h"
+#include "utils.h"
 #include "tetris.h"
 #include "tetromino.h"
 
@@ -125,8 +126,7 @@ static void update_screen(Game *game)
 	if (wcols < ((BOARD_COLS - 1) + (TETROMINO_PREVIEW_COLS - 1))*CELL_WIDTH_IN_BOX_SEQS
 		|| wrows < (BOARD_ROWS - 1))
 	{
-		perror("Too small window size");
-		exit(EXIT_FAILURE);
+		die("Too small window size");
 	}
 
 	start_x = (wcols - CELL_WIDTH_IN_BOX_SEQS*BOARD_COLS - TETROMINO_PREVIEW_COLS) / 2;
@@ -152,8 +152,7 @@ static int *get_cell_neighbours(int idx, int width, int *cells)
 	int *n = malloc(4*sizeof(int));
 	if (n == NULL)
 	{
-		perror("Failed to get cell's neighbours");
-		exit(errno);
+		die("Failed to get cell's neighbours");
 	}
 	n[0] = (idx - width - 1 < 0) ? 0 : cells[idx - width - 1];
 	n[1] = (idx - width < 0) ? 0 : cells[idx - width];
@@ -182,8 +181,7 @@ static char *get_board_string(Tetris *tetris, int start_x, int start_y)
 
 	if ((str = malloc(((CELL_WIDTH_IN_BOX_SEQS*BOARD_COLS*BOARD_ROWS)*MAX_BOX_SEQ_LEN_IN_BYTES + BOARD_ROWS*MAX_ESC_SEQ_LEN_IN_BYTES)*sizeof(char))) == NULL)
 	{
-		perror("Failed to generate string representation of tetris");
-		exit(errno);
+		die("Failed to generate string representation of tetris");
 	}
 
 	for (i = BOARD_COLS; i < BOARD_COLS*BOARD_ROWS; ++i)
@@ -213,8 +211,7 @@ static char *get_tetromino_preview_string(Tetris *tetris, int start_x, int start
 
 	if (str == NULL)
 	{
-		perror("Failed to allocate string for tetromino preview");
-		exit(errno);
+		die("Failed to allocate string for tetromino preview");
 	}
 
 	for (row = 1; row < TETROMINO_PREVIEW_ROWS; ++row)
@@ -239,8 +236,7 @@ static int *get_tetromino_preview_bitmap(Tetromino *tetromino)
 	int *bitmap = calloc(TETROMINO_PREVIEW_COLS*TETROMINO_PREVIEW_ROWS, sizeof(int));
 	if (bitmap == NULL)
 	{
-		perror("Failed to generate tetromino preview bitmap");
-		exit(errno);
+		die("Failed to generate tetromino preview bitmap");
 	}
 
 	/* Generate borders */
@@ -267,8 +263,7 @@ static char *get_score_view_string(Game *game, int start_x, int start_y)
 
 	if (str == NULL)
 	{
-		perror("Failed to generate score view string");
-		exit(errno);
+		die("Failed to generate score view string");
 	}
 
 	str_pos += sprintf(str + str_pos, "\x1b[%i;%iH%s", start_y, start_x, BOX_SEQS[9]);

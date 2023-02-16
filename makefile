@@ -1,6 +1,6 @@
 flags = -std=c89 -Wall -Wextra -Wpedantic -g3
 
-tetris: main.o game.o tetris.o tetromino.o term.o
+tetris: main.o game.o tetris.o tetromino.o term.o utils.o
 	mkdir -p bin
 	gcc $(flags) \
 		build/main.o \
@@ -8,6 +8,7 @@ tetris: main.o game.o tetris.o tetromino.o term.o
 		build/tetris.o \
 		build/tetromino.o \
 		build/term.o \
+		build/utils.o \
 		-o bin/tetris
 
 main.o: src/main.c
@@ -25,6 +26,9 @@ tetromino.o: src/tetromino.c src/tetromino.h
 
 term.o: src/term.c src/term.h
 	gcc $(flags) -c src/term.c -o build/term.o
+
+utils.o: src/utils.c src/utils.h
+	gcc $(flags) -c src/utils.c -o build/utils.o
 
 clean:
 	rm -rf bin/ build/

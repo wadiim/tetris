@@ -1,5 +1,6 @@
 #include "tetromino.h"
 #include "tetris.h"
+#include "utils.h"
 #include "term.h"
 
 #include <stdlib.h>
@@ -27,8 +28,7 @@ void initialize_tetris(Tetris *tetris)
 
 	if ((tetris->cells = calloc(CELLS_SIZE, sizeof(int))) == NULL)
 	{
-		perror("Failed to initialize tetris");
-		exit(errno);
+		die("Failed to initialize tetris");
 	}
 
 	/* Add horizontal borders */
@@ -48,8 +48,7 @@ void initialize_tetris(Tetris *tetris)
 	/* Initialize next tetromino */
 	if ((tetris->next_tetromino = malloc(sizeof(Tetromino))) == NULL)
 	{
-		perror("Failed to initialize next tetromino");
-		exit(errno);
+		die("Failed to initialize next tetromino");
 	}
 	initialize_tetromino(tetris->next_tetromino, START_POS);
 }
@@ -66,8 +65,7 @@ int add_new_tetromino(Tetris *tetris)
 	tetris->active_tetromino = tetris->next_tetromino;
 	if ((tetris->next_tetromino = malloc(sizeof(Tetromino))) == NULL)
 	{
-		perror("Failed to add new tetromino");
-		exit(errno);
+		die("Failed to add new tetromino");
 	}
 	initialize_tetromino(tetris->next_tetromino, START_POS);
 	return insert_tetromino(tetris, tetris->active_tetromino);

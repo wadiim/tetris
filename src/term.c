@@ -1,4 +1,5 @@
 #include "term.h"
+#include "utils.h"
 
 #define _XOPEN_SOURCE 700
 
@@ -20,8 +21,7 @@ void switch_to_alternate_buffer(void)
 {
 	if (write(STDOUT_FILENO, "\x1b[?1049h\x1b[H", 11) != 11)
 	{
-		perror("Failed to switch to alternate buffer");
-		exit(errno);
+		die("Failed to switch to alternate buffer");
 	}
 }
 
@@ -29,8 +29,7 @@ void switch_to_normal_buffer(void)
 {
 	if (write(STDOUT_FILENO, "\x1b[?1049l", 8) != 8)
 	{
-		perror("Failed to switch to normal buffer");
-		exit(errno);
+		die("Failed to switch to normal buffer");
 	}
 }
 
@@ -38,8 +37,7 @@ void hide_cursor(void)
 {
 	if (write(STDOUT_FILENO, "\x1b[?25l", 6) != 6)
 	{
-		perror("Failed to hide cursor");
-		exit(errno);
+		die("Failed to hide cursor");
 	}
 }
 
@@ -47,8 +45,7 @@ void show_cursor(void)
 {
 	if (write(STDOUT_FILENO, "\x1b[?25h", 6) != 6)
 	{
-		perror("Failed to show cursor");
-		exit(errno);
+		die("Failed to show cursor");
 	}
 }
 
@@ -58,7 +55,7 @@ void set_window_title(const char *title)
 	if (sprintf(buf, "\x1b]0;%s\x7", title) < 0
 		|| write(STDOUT_FILENO, buf, sizeof(buf)) == -1)
 	{
-		perror("Failed to set window title");
+		die("Failed to set window title");
 	}
 }
 
@@ -71,8 +68,7 @@ void get_window_size(int *x, int *y)
 		if (write(STDOUT_FILENO,
 			"\x1b[999C\x1b[999B", 12) != 12)
 		{
-			perror("Failed to get window size");
-			exit(errno);
+			die("Failed to get window size");
 		}
 		get_cursor_position(x, y);
 		if (x != NULL) ++(*x);
@@ -90,8 +86,7 @@ void switch_to_raw_mode(void)
 	struct termios raw = orig_termios;
 	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
 	{
-		perror("Failed to switch to raw mode");
-		exit(errno);
+		die("Failed to switch to raw mode");
 	}
 	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
 	raw.c_oflag &= ~(OPOST);
@@ -101,8 +96,7 @@ void switch_to_raw_mode(void)
 	raw.c_cc[VTIME] = 1;
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
 	{
-		perror("Failed to switch to raw mode");
-		exit(errno);
+		die("Failed to switch to raw mode");
 	}
 }
 
@@ -110,8 +104,7 @@ void switch_to_cooked_mode(void)
 {
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1)
 	{
-		perror("Failed to switch to cooked mode");
-		exit(errno);
+		die("Failed to switch to cooked mode");
 	}
 }
 
@@ -146,8 +139,7 @@ int get_char(void *c)
 	int nread = read(STDIN_FILENO, c, 1);
 	if (nread == -1 && errno != EAGAIN)
 	{
-		perror("Failed to get input");
-		exit(errno);
+		die("Failed to get input");
 	}
 	return nread;
 }
@@ -159,8 +151,7 @@ void get_cursor_position(int *x, int *y)
 
 	if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
 	{
-		perror("Failed to get cursor position");
-		exit(errno);
+		die("Failed to get cursor position");
 	}
 
 	while (i < sizeof(buf) - 1)
@@ -174,8 +165,7 @@ void get_cursor_position(int *x, int *y)
 	{
 		if (sscanf(&buf[4], "%i", x) != 1)
 		{
-			perror("Failed to get cursor position");
-			exit(errno);
+			die("Failed to get cursor position");
 		}
 		--(*x);
 	}
@@ -183,8 +173,7 @@ void get_cursor_position(int *x, int *y)
 	{
 		if (sscanf(&buf[2], "%i", y) != 1)
 		{
-			perror("Failed to get cursor position");
-			exit(errno);
+			die("Failed to get cursor position");
 		}
 		--(*y);
 	}
@@ -195,8 +184,7 @@ void clear_screen(void)
 	if (write(STDOUT_FILENO, "\x1b[2J", 4) != 4
 		|| write(STDOUT_FILENO, "\x1b[H", 3) != 3)
 	{
-		perror("Failed to clear screen");
-		exit(errno);
+		die("Failed to clear screen");
 	}
 }
 
@@ -211,8 +199,7 @@ void create_signal_handler(int signal, void (*handler)(int))
 	sa.sa_handler = handler;
 	if (sigaction(signal, &sa, NULL) == -1)
 	{
-		perror("Failed to create signal handler");
-		exit(errno);
+		die("Failed to create signal handler");
 	}
 }
 
@@ -221,7 +208,6 @@ void destroy_signal_handler(int signal)
 	sa.sa_handler = SIG_DFL;
 	if (sigaction(signal, &sa, NULL) == -1)
 	{
-		perror("Failed to destroy signal handler");
-		exit(errno);
+		die("Failed to destroy signal handler");
 	}
 }
