@@ -111,7 +111,7 @@ int remove_full_rows(Tetris *tetris)
 {
 	int row, col, is_full, num_of_rows_removed = 0;
 	int start = tetris->active_tetromino->pos / BOARD_COLS;
-	int end = (start + TETROMINO_BITMAP_HEIGHT > BOARD_ROWS - 1) ? BOARD_ROWS - 1 : start + TETROMINO_BITMAP_HEIGHT;
+	int end = (start + TETROMINO_BITMAP_HEIGHT + 1 > BOARD_ROWS - 1) ? BOARD_ROWS - 1 : start + TETROMINO_BITMAP_HEIGHT + 1;
 
 	for (row = start; row < end; ++row)
 	{
